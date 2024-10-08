@@ -1,0 +1,237 @@
+#### 1 QUESTION
+
+  282  lab auth-ldap start
+    3  #ssh ocpadm@workbench
+    4  #password:
+    7  cat /usr/locat/etc/ocp4.config
+    6  oc login -u admin -p redhat https://api.ocp4.example.com:6443
+    8  oc whoami
+    9  oc get nodes
+   11  oc create secret generic ldap-secret --from-literal=bindPassword=Redhat123@!  -n openshift-config 
+   12  wget http://idm.ocp4.example.com/ipa/config/ca.crt
+   13  ls
+   14  oc create configmap ca-config-map --from-file=ca.crt=ca.crt -n openshift-config
+   15  oc get oauth cluster -o yaml
+   16  cat ~/DO380/labs/auth-ldap/ldap-cr.yml 
+   17  vim ~/DO380/labs/auth-ldap/ldap-cr.yml
+   20  oc replace -f ~/DO380/labs/auth-ldap/ldap-cr.yml
+   21  oc get oauth cluster -o yaml
+   22  oc logout
+   23  oc login -u openshift-user -p openshift-user
+   25  oc whoami -t
+   26  TOKEN=$(oc whoami -t)
+   27  echo $TOKEN
+   28  curl -sk --header "Authorization: Bearer $TOKEN" -X GET https://api.ocp4.example.com:6443/api/v1/pods/ | jq ".items[].metadata.name"
+   29  oc logout
+   30  oc login -u admin -p redhat https://api.ocp4.example.com:6443
+   31  oc get user
+   32  oc adm policy add-cluster-role-to-user cluster-admin openshift-user
+   33  oc logout
+   34  oc login -u openshift-user -p openshift-user
+   35  curl -sk --header "Authorization: Bearer $TOKEN" -X GET https://api.ocp4.example.com:6443/api/v1/pods/ | jq ".items[].metadata.name"  --> check the output
+
+#### 2 QUESTION
+
+   64  ##Ansible Indendation Issue to check all the given files
+   65  ##Menifests Indendation Issue
+   37  vim ~/DO380/labs/auth-ldap/ldap-cr.yml
+   39  git clone https://github.com/dumpdev/ex380.git
+   40  cd ~/ex380/ansible/
+   44  vim 2048-gameinit.yaml 
+   45  ansible-playbook 2048-gameinit.yaml --syntax-check
+   53  vim 2048-serviceaccount.yaml  
+   55  cat 2048-deploy.yaml 
+   56  cat 2048-rbac.yaml 
+   57  vim 2048-gameinit.yaml 
+   58  ansible-playbook 2048-gameinit.yaml --syntax-check
+   59  ansible-playbook 2048-gameinit.yaml 
+   61  oc project opengame
+   62  oc get all   ---> To check all the "OC resources"
+
+   Verify the output of (routes or given url)
+
+#### 3 QUESTION
+
+  283  lab monitor-alerts start
+   68  oc get pods -n openshift-monitoring 
+   69  oc get secrets -n openshift-monitoring 
+   70  oc extract secret/alertmanager-main --to /tmp/ -n openshift-monitoring 
+   71  vim /tmp/alertmanager.yaml 
+   72  sed -i 's/"//g' /tmp/alertmanager.yaml
+   73  vim /tmp/alertmanager.yaml  
+   75  oc set data secret/alertmanager-main --from-file /tmp/alertmanager.yaml -n openshift-monitoring
+
+   Switch to utility node and verify the mail using "mutt" command
+
+#### 4 QUESTION
+   
+   76  cd ~/ex380/migrate/
+   78  ls
+   79  sh land.sh           --> The script will create a container image as ".tar" file
+   80  ls
+   81  cat land-ns.yaml     --> Check the namespaces to create a project 
+   82  oc new-project landing
+   83  cat land-deploy.yaml --> To check the registry name 
+   84  ls 
+   85  podman load -i landing.tar
+   86  podman images
+   87  #syntax -> "<registry-url>/username/image:tag"
+   88  podman login registry.ocp4.example.com:8443   --> Given in the initial setup
+   89  podman tag 023a69d58e9a registry.ocp4.example.com:8443/developer/redhat-landing:4.2
+   90  podman images
+   91  podman push registry.ocp4.example.com:8443/developer/redhat-landing:4.2
+   92  oc new-app --name=landing --image=registry.ocp4.example.com:8443/developer/redhat-landing:4.2
+
+(Not required for the exam)   93  #oc new-app --name=landing  --as-deployment-config --image=registry.ocp4.example.com:8443/developer/redhat-landing:4.2
+
+   94  oc get pods
+   96  oc describe pod landing-567c968888-wxrv7 | grep scc
+   97  oc create serviceaccount land
+   98  oc get pod landing-567c968888-wxrv7 -o yaml | oc adm policy scc-subject-review -f -   ## To check which profile is suitable 
+   99  oc adm policy add-scc-to-user anyuid -z land
+  100  oc get deployment
+  101  oc set serviceaccount deployment/landing land
+  102  oc get deployment
+  103  oc describe deployment landing 
+  104  oc get is
+  105  oc describe pod landing-685d7f6464-bgr74 --> check the container name
+  106  oc set triggers deployment/landing --from-image landing:4.2 -c landing --> Set the trigger of image stream 
+  108  oc import-image landing --from=registry.ocp4.example.com:8443/developer/redhat-landing --confirm --scheduled -->set the schedule
+  110  oc get service
+  111  ls
+  112  cat land-ingress.yaml --> check the svc name 
+  113  oc get service
+  114  oc expose service landing --hostname=landing.apps.ocp4.example.com
+  115  oc get route
+  116  history
+  120  oc import-image --help
+
+  Verify the output of (routes or given url)
+
+#### 5 QUESTION
+
+  122  cd
+  123  oc new-project maxim
+  124  oc create cronjob --help
+  125  cat /etc/crontab 
+  126  oc create cronjob scale --image=quay.io/redhattraining/scaling --schedule='5 4 * * *'
+  127  oc describe cronjobs.batch 
+  128  oc create serviceaccount magnum
+  129  oc get cronjobs.batch scale 
+  130  oc get pods
+  131  oc edit cronjobs.batch scale -->to add the service account and success count
+  132  history
+     
+#### 6 QUESTION
+
+  136  cd ~/ex380/machine/
+  139  ls
+  140  cat chrony.conf 
+  141  oc get nodes
+  142  oc get mc  ---> To list the machine config
+  143  oc get mc 00-worker -o yaml | more
+  144  oc get mc
+  145  oc get mc 99-worker-ssh -o yaml
+ 
+  149  vim chrony-mc.yaml
+  150  base64 chrony.conf  --> To encode the given file
+  151  vim chrony-mc.yaml  --> To add the name, node information, encoding details in single line
+  152  oc create -f chrony-mc.yaml
+  260  watch oc get nodes  --> It will randomly choose one worker and make the changes
+
+       Verify the output from one of the worker node
+       ssh core@worker01.ocp4.example.com 
+       cat /etc/chrony.conf
+       exit
+
+       If it is master node means follow the below steps 
+       cp chrony-mc.yaml chrony-mc-master.yaml 
+       vim chrony-mc-master.yaml --> To only change the name and node information
+
+       Verify the output from one of the master node
+       ssh core@master01.ocp4.example.com 
+       cat /etc/chrony.conf
+       exit
+
+
+#### 7 QUESTION 
+
+  160  oc whoami --show-console
+  161  oc new-project butane
+  162  oc describe project butane 
+  163  oc label namespaces butane openshift.io/cluster-monitoring=true
+  164  oc describe project butane
+
+#### 8 QUESTION 
+
+  165  oc new-project galaxy
+  166  oc new-app --name=lamda --image=quay.io/redhattraining/hello-world-nginx
+  167  oc get pods
+  169  oc get deployment
+  170  oc scale --replicas=2 deployment/lamda
+  172  oc get pods
+  173  oc get service
+  174  oc create route edge --service=lamda --hostname=lamda.apps.ocp4.example.com --> create the secure route using edge method of default cert/keys
+  175  oc get route
+  176  oc rsh lamda-7bdfd7f65f-5ws8h 
+  177  oc get sc
+  178  oc get sc nfs-storage -o yaml
+  179  oc get pods -n nfs-client-provisioner 
+  180  oc describe pod nfs-client-provisioner-59f966694b-w57cs -n nfs-client-provisioner --> physical storage info to be there (but in exam it available on "SC") 
+  181  #NFS_SERVER:        192.168.50.254
+  182  #NFS_PATH:          /exports-ocp4
+  183  #NFS_SERVER:        192.168.50.254
+
+       Steps to follow
+  186  ##Create PV
+  187  ##Create PVC
+  188  ##Bind PVC --> APP
+  
+  189  ##1) Create PV -->download the PV content from WEB-UI 
+  191  oc get sc
+  192  vim Downloads/persistentvolume-example.yaml 
+  193  #NFS_PATH:          /exports-ocp4
+  194  #NFS_SERVER:        192.168.50.254
+  195  vim Downloads/persistentvolume-example.yaml 
+  202  oc create -f Downloads/persistentvolume-example.yaml
+  203  oc get pv
+
+  204  ##2) Create PVC -->download the PVC content from WEB-UI
+  205  vim Downloads/persistentvolumeclaim-example.yaml 
+  207  oc create -f Downloads/persistentvolumeclaim-example.yaml
+  209  oc get pvc
+
+  210  ##3) Bind PVC --> APP
+  213  oc get pvc
+  211  oc get deployment
+  214  #mount-path: /srv
+  217  oc set volumes --type pvc --claim-name lamdapvc --add --mount-path /srv --name lamdavol deployment/lamda
+  218  oc describe deployment lamda 
+  219  oc rsh lamda-79cd75f97d-xcgqz 
+
+   Verify the output of (routes or given url)
+
+#### 9 QUESTION
+
+  285  lab workers-degrade start 
+  223  cd ex380/schedule/
+  224  ls
+  225  oc create -f genapp.yaml 
+  226  oc project catalog 
+  233  oc get pods -o wide  ---> The pod will run in the selected worker node as in the exam
+  234  oc describe pod redbase-7c94549d5-544s4  ---> To check the "node selector" inside the pod
+  235  oc get node worker01 --show-labels
+  236  oc get pods -o wide
+  237  oc label node worker01 base=alpha  ---> To set the "node selector" as per the pod
+  238  oc get node worker01 --show-labels
+  239  oc get pods -o wide
+
+       Still the pod has issue
+  240  oc describe pod redbase-7c94549d5-544s4 
+  241  oc get deployment
+  242  oc edit deployment redbase ---> Change the limit range. (limit range greater than request range)
+  243  oc get pods 
+  244  oc describe pod redbase-68675db76b-dbm72 
+  245  oc get pods -w  --> If the node is still cordon means should execute the uncordon command
+  230  oc adm uncordon worker01  
+
