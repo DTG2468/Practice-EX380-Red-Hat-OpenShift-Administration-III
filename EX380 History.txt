@@ -96,7 +96,7 @@
   104  oc get is
   105  oc describe pod landing-685d7f6464-bgr74 --> check the container name
   106  oc set triggers deployment/landing --from-image landing:4.2 -c landing --> Set the trigger of image stream 
-  108  oc import-image landing --from=registry.ocp4.example.com:8443/developer/redhat-landing --confirm --scheduled -->set the schedule
+  108  oc import-image landing:4.2 --from=registry.ocp4.example.com:8443/developer/redhat-landing:4.2 --confirm --scheduled -->set the schedule
   110  oc get service
   111  ls
   112  cat land-ingress.yaml --> check the svc name 
